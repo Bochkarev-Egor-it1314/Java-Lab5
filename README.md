@@ -247,5 +247,3 @@ public int readInt(Scanner scanner) {
         }
     }
 ```
-
-+ 
