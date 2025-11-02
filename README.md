@@ -37,15 +37,244 @@
 + Переопределите метод сравнения объектов по состоянию таким образом, чтобы две дроби считались одинаковыми тогда, когда у них одинаковые значения числителя и знаменателя.
 
 **<ins>Метод решения:</ins>**
+Эта задача решается дополнением класса `Fraction` с прошлой лабораторной работы.
 
+Создаём интерфейс `FractionInterface`. Он нужен для определения методов `getDoubleValue()`, `setNumerator(int numerator)`, `setDenominator(int denominator)`. Таким образом, интерфейс обеспечивает стандарт для работы с дробями: каждый класс, реализующий этот интерфейс, будет иметь эти методы и гарантировать, что они реализованы определённым образом.
+
+Внутри класса 4 поля: `numerator`, `denominator`, `cachedValue` и `isCacheValid`. Также есть конструктор, который: проверяет на 0 знаменатель, задаёт числитель и знаменатель, проверяет на отрицательное значение знаменатель, инваледирует кэш при создании и сокращает дробь.
+
+Кроме этого есть основные геттеры и сеттеры. Геттеры для этой задачи стандартные, а вот сеттеры модернизированные. Сеттер для числителя задаёт числитель, инвалидирует кэш и позваляет сократить число. Сеттер для знаменателя проверяет значение на 0, задаёт знаменатель, делает его положительным, инвалидирует кэш и позваляет сократить число.
+
+Метод `positiveDenominator()` при отрицательном знаменателе меняе его знак на положительный, а знак числителя на отрицательный.
+
+Метод `invalidateCache()` используется для того, чтобы инвалидировать (сделать недействительным) кэшированное вещественное значение дроби. Важно, что дробь кэширует результат деления числителя на знаменатель для ускорения вычислений. Но если дробь изменяется, нужно сбросить кэш, чтобы в следующий раз при запросе обновленное значение снова вычислялось корректно.
+
+Методы `simplify()` и `gcd(int a, int b)` позваляют сокращать дробь с помощью НОД.
+
+Метод это `toString()` отвечает за вывод результата строкой.
+
+Далее следует выполнение всех математических операции с дробями (Сложение, вычитание, умножение и деление) и выполнение с натуральным числом, а не с дробью. В методе с делением проверяется, чтоб не было деления на 0.
+
+Последним идёт меттод `equals(Object obj)`. Метод `equals(Object obj)` используется для проверки, равны ли две дроби. Важно, что метод сравнивает дроби по математическому значению, а не по внутреннему состоянию числителя и знаменателя.
+
+В `Main` создаётся с клавиатуры две дроби. После чего проводятся операции: с дробями, с целым числом и дробью, кэширование вещественного значения дробей, проверка равенства дробей, изменение дроби.
 
 **<ins>Код реализации:</ins>**
 ```
+interface FractionInterface {
+    double getDoubleValue();
+    void setNumerator(int numerator);
+    void setDenominator(int denominator);
+}
+```
 
+```
+public class Fraction implements FractionInterface {
+    private int numerator;  // числитель
+    private int denominator; // знаменатель
+    private Double cachedDoubleValue; // кэшированное вещественное значение
+    private boolean isCacheValid; // флаг валидности кэша
+
+    // Конструктор с числителем и знаменателем
+    public Fraction(int numerator, int denominator) {
+        if (denominator == 0) {
+            throw new IllegalArgumentException("Знаменатель не может быть 0");
+        }
+        this.denominator = denominator;
+        this.numerator = numerator;
+        positiveDenominator(); // нормализуем знаки
+        invalidateCache(); // инвалидируем кэш при создании
+        simplify();
+    }
+
+    // Геттеры
+    public int getNumerator() {
+        return numerator;
+    }
+
+    public int getDenominator() {
+        return denominator;
+    }
+
+    public double getDoubleValue() {
+        if (!isCacheValid) {
+            cachedDoubleValue = (double) numerator / denominator;
+            isCacheValid = true;
+        }
+        return cachedDoubleValue;
+    }
+
+    // Сеттеры
+    @Override
+    public void setNumerator(int numerator) {
+        this.numerator = numerator;
+        invalidateCache();
+        simplify();
+    }
+
+    @Override
+    public void setDenominator(int denominator) {
+        if (denominator == 0) {
+            throw new IllegalArgumentException("Знаменатель не может быть равен нулю!");
+        }
+        this.denominator = denominator;
+        positiveDenominator();
+        invalidateCache();
+        simplify();
+    }
+
+    // Делаем знаменатель всегда положительным
+    private void positiveDenominator() {
+        if (denominator < 0) {
+            numerator = -numerator;
+            denominator = -denominator;
+        }
+    }
+
+    // Инвалидация кэша
+    private void invalidateCache() {
+        isCacheValid = false;
+        cachedDoubleValue = null;
+    }
+
+    // Упрощение дроби
+    public void simplify() {
+        int gcd = gcd(Math.abs(numerator), Math.abs(denominator));
+        if (gcd > 1) {
+            numerator /= gcd;
+            denominator /= gcd;
+        }
+        invalidateCache();
+    }
+
+    // Вычисление НОД (наибольшего общего делителя)
+    private int gcd(int a, int b) {
+        while (b != 0) {
+            int temp = b;
+            b = a % b;
+            a = temp;
+        }
+        return a;
+    }
+
+    // Переопределение toString
+    @Override
+    public String toString() {
+        return numerator + "/" + denominator;
+    }
+
+    // Метод сложения двух дробей
+    public Fraction add(Fraction other) {
+        int newNumerator = this.numerator * other.denominator + this.denominator * other.numerator;
+        int newDenominator = this.denominator * other.denominator;
+        return new Fraction(newNumerator, newDenominator);
+    }
+
+    // Метод вычитания двух дробей
+    public Fraction subtract(Fraction other) {
+        int newNumerator = this.numerator * other.denominator - this.denominator * other.numerator;
+        int newDenominator = this.denominator * other.denominator;
+        return new Fraction(newNumerator, newDenominator);
+    }
+
+    // Метод умножения дробей
+    public Fraction multiply(Fraction other) {
+        int newNumerator = this.numerator * other.numerator;
+        int newDenominator = this.denominator * other.denominator;
+        return new Fraction(newNumerator, newDenominator);
+    }
+
+    // Метод деления дробей
+    public Fraction divide(Fraction other) {
+        if (other.numerator == 0) {
+            throw new IllegalArgumentException("Деление на ноль невозможно.");
+        }
+        int newNumerator = this.numerator * other.denominator;
+        int newDenominator = this.denominator * other.numerator;
+        return new Fraction(newNumerator, newDenominator);
+    }
+
+    // Метод сложения дроби и целого числа
+    public Fraction add(int number) {
+        int newNumerator = this.numerator + number * this.denominator;
+        return new Fraction(newNumerator, this.denominator);
+    }
+
+    // Метод вычитания дроби и целого числа
+    public Fraction subtract(int number) {
+        int newNumerator = this.numerator - number * this.denominator;
+        return new Fraction(newNumerator, this.denominator);
+    }
+
+    // Метод умножения дроби и целого числа
+    public Fraction multiply(int number) {
+        int newNumerator = this.numerator * number;
+        return new Fraction(newNumerator, this.denominator);
+    }
+
+    // Метод деления дроби на целое число
+    public Fraction divide(int number) {
+        if (number == 0) {
+            throw new IllegalArgumentException("Деление на ноль невозможно.");
+        }
+        return new Fraction(this.numerator, this.denominator * number);
+    }
+
+    // Переопределение equals
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        Fraction other = (Fraction) obj;
+        return numerator * other.denominator == denominator * other.numerator;
+    }
+}
 ```
 
 **<ins>Вывод на экран:</ins>**
+Введите числитель: 8
 
+Введите знаменатель: 24
+
+Создана дробь: 1/3
+
+Введите числитель второй дроби: 9
+
+Введите знаменатель второй дроби: 11
+
+Создана дробь: 9/11
+
+Сложение дробей: 38/33
+
+Вычитание дробей: -16/33
+
+Умножение дробей: 3/11
+
+Деление дробей: 11/27
+
+Введите целое число для операции с первой дробью: 2
+
+Сложение с числом: 7/3
+
+Вычитание с числом: -5/3
+
+Умножение на число: 2/3
+
+Деление на число: 1/6
+
+Вещественное значение первой дроби: 0.3333333333333333
+
+Равенство первой и второй дроби: false
+
+Введите новый числитель для первой дроби:
+
+5
+
+Введите новый знаменатель для первой дроби: 
+
+25
+
+Обновленная первая дробь: 1/5
 ***
 
 ### Задание 2 (Структурные шаблоны)
