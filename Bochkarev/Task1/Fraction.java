@@ -3,7 +3,7 @@ package ru.Bochkarev.Task1;
 public class Fraction implements FractionInterface {
     private int numerator;  // числитель
     private int denominator; // знаменатель
-    private Double cachedValue; // кэшированное вещественное значение
+    private Double cachedDoubleValue; // кэшированное вещественное значение
     private boolean isCacheValid; // флаг валидности кэша
 
     // Конструктор с числителем и знаменателем
@@ -27,11 +27,18 @@ public class Fraction implements FractionInterface {
         return denominator;
     }
 
-    // Сеттеры с инвалидацией кэша
+    public double getDoubleValue() {
+        if (!isCacheValid) {
+            cachedDoubleValue = (double) numerator / denominator;
+            isCacheValid = true;
+        }
+        return cachedDoubleValue;
+    }
+
+    // Сеттеры
     @Override
     public void setNumerator(int numerator) {
         this.numerator = numerator;
-        positiveDenominator();
         invalidateCache();
         simplify();
     }
@@ -58,16 +65,7 @@ public class Fraction implements FractionInterface {
     // Инвалидация кэша
     private void invalidateCache() {
         isCacheValid = false;
-        cachedValue = null;
-    }
-
-    // Получение вещественного значения с кэшированием
-    public double getDoubleValue() {
-        if (!isCacheValid) {
-            cachedValue = (double) numerator / denominator;
-            isCacheValid = true;
-        }
-        return cachedValue;
+        cachedDoubleValue = null;
     }
 
     // Упрощение дроби
@@ -160,11 +158,5 @@ public class Fraction implements FractionInterface {
         if (obj == null || getClass() != obj.getClass()) return false;
         Fraction other = (Fraction) obj;
         return numerator * other.denominator == denominator * other.numerator;
-    }
-
-    // Переопределение hashCode
-    @Override
-    public int hashCode() {
-        return 31 * numerator + denominator;
     }
 }
