@@ -63,6 +63,7 @@ public class Main {
 
                         // Кэширование вещественного значения
                         System.out.println("Вещественное значение первой дроби: " + fraction.getDoubleValue());
+                        System.out.println("Вещественное значение второй дроби: " + fraction2.getDoubleValue());
 
                         // Проверка равенства
                         System.out.println("Равенство первой и второй дроби: " + fraction.equals(fraction2));
