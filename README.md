@@ -37,6 +37,7 @@
 + Переопределите метод сравнения объектов по состоянию таким образом, чтобы две дроби считались одинаковыми тогда, когда у них одинаковые значения числителя и знаменателя.
 
 **<ins>Метод решения:</ins>**
+
 Эта задача решается дополнением класса `Fraction` с прошлой лабораторной работы.
 
 Создаём интерфейс `FractionInterface`. Он нужен для определения методов `getDoubleValue()`, `setNumerator(int numerator)`, `setDenominator(int denominator)`. Таким образом, интерфейс обеспечивает стандарт для работы с дробями: каждый класс, реализующий этот интерфейс, будет иметь эти методы и гарантировать, что они реализованы определённым образом.
@@ -60,6 +61,7 @@
 В `Main` создаётся с клавиатуры две дроби. После чего проводятся операции: с дробями, с целым числом и дробью, кэширование вещественного значения дробей, проверка равенства дробей, изменение дроби.
 
 **<ins>Код реализации:</ins>**
+
 ```
 interface FractionInterface {
     double getDoubleValue();
@@ -232,6 +234,7 @@ public class Fraction implements FractionInterface {
 ```
 
 **<ins>Вывод на экран:</ins>**
+
 Введите числитель: 8
 
 Введите знаменатель: 24
@@ -311,13 +314,178 @@ public class Fraction implements FractionInterface {
 
 **<ins>Метод решения:</ins>**
 
+Для решения этой задачи создаётся новый класс `MyList` и его интерфейс `GenericList<T>`.
+
+Интерфейс `GenericList<T>` задаёт контракт: любая реализация списка должна поддерживать добавление элементов, удаление всех вхождений заданного значения, возвращать размер, проверять пустоту и уметь выдавать строковое представление. Использование обобщения <T> делает интерфейс универсальным — он может хранить объекты любого типа.
+
+Класс `MyList` начинается с вложенного класса `Node<E>`, который является узлом списка. Так же класс имеет поля `head` - указатель на первый узел списка, `tail` - указатель на последний узел, `size` - количество элементов в списке.
+
+Метод `add(T element)` создаёт новый узел с переданным `element`, если список пуст, новый узел становится и `head`, и `tail`, иначе прикрепляет новый узел к `tail.next` и обновляет `tail`, увеличивает `size`.
+
+Метод `removeAll(T value)` это главный метод задачи — удаляет все элементы со значением `value`. В начале реализуется удаление подряд идущих голов - это покрывает случай, когда удаляемые элементы находятся в начале списка, для корректной работы используем сравнение `Objects.equals(x, y)`, которое корректно обрабатывает `null`. Далее идёт обработка случая опустевшего списка. Затем проходим по оставшемуся списку. В конце обновляем `tail`, ведь после возможных удалений последний элемент списка мог измениться.
+
+Метод `size()` выводит длину списка, `isEmpty() ` проверяет список на пустоту, а `toString()` выводит строку.
+
+В `Main` показывается работа нескольких сценариев: список Integer и список String - эти примеры проверяют типичные сценарии и пограничные случаи.
+
 **<ins>Код реализации:</ins>**
+
+```
+interface GenericList<T> {
+    void add(T element); // добавить элемент в конец
+    int removeAll(T value); // удалить все элементы, равные value, вернуть число удалённых
+    int size(); // количество элементов
+    boolean isEmpty(); // пуст ли список
+    String toString(); // строковое представление
+}
 ```
 
+```
+import java.util.Objects;
+
+public class MyList<T> implements GenericList<T> {
+    // Внутренний класс узла
+    private static class Node<E> {
+        E data;
+        Node<E> next;
+        Node(E data) { this.data = data; }
+    }
+
+    private Node<T> head;
+    private Node<T> tail;
+    private int size = 0;
+
+    // Добавление элемента
+    @Override
+    public void add(T element) {
+        Node<T> node = new Node<>(element);
+        if (head == null) {
+            head = tail = node;
+        } else {
+            tail.next = node;
+            tail = node;
+        }
+        size++;
+    }
+
+    // Удаляет все элементы списка, равные value.
+    @Override
+    public int removeAll(T value) {
+        int removed = 0;
+
+        // Удаляем подряд идущие головы, равные value
+        while (head != null && Objects.equals(head.data, value)) {
+            head = head.next;
+            removed++;
+            size--;
+        }
+
+        // Если список стал пустым — обновляем tail и возвращаем
+        if (head == null) {
+            tail = null;
+            return removed;
+        }
+
+        // Проходим по списку и удаляем последующие узлы, равные value
+        Node<T> current = head;
+        while (current.next != null) {
+            if (Objects.equals(current.next.data, value)) {
+                // пропускаем следующий узел
+                current.next = current.next.next;
+                removed++;
+                size--;
+            } else {
+                current = current.next;
+            }
+        }
+
+        // Обновляем tail на случай, если последний элемент(ы) были удалены
+        tail = head;
+        if (tail != null) {
+            while (tail.next != null) tail = tail.next;
+        }
+
+        return removed;
+    }
+
+    // Размер списка
+    @Override
+    public int size() {
+        return size;
+    }
+
+    // Проверка на пустоту
+    @Override
+    public boolean isEmpty() {
+        return size == 0;
+    }
+
+    // Возвращение строки
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append('[');
+        Node<T> cur = head;
+        boolean first = true;
+        while (cur != null) {
+            if (!first) sb.append(", ");
+            sb.append(String.valueOf(cur.data));
+            first = false;
+            cur = cur.next;
+        }
+        sb.append(']');
+        return sb.toString();
+    }
+
+}
 ```
 
 **<ins>Вывод на экран:</ins>**
 
+Какой список нужно создать?
+
+1) Integer
+   
+2) String
+   
+Ваш выбор:
+
+2
+
+Сколько элементов в списке?
+
+5
+=Введите элемент=
+
+qwerty
+
+=Введите элемент=
+
+qw
+
+=Введите элемент=
+
+er
+
+=Введите элемент=
+
+ty
+
+=Введите элемент=
+
+qwerty
+
+Изначальный список: [qwerty, qw, er, ty, qwerty]
+
+Какой элемент убрать?
+
+qwerty
+
+Удалено элементов: 2
+
+Список после удаления: [qw, er, ty]
+
+Размер: 3
 ***
 
 ### Задание 4.2 (Мап)
@@ -355,14 +523,94 @@ public class Fraction implements FractionInterface {
 
 **<ins>Метод решения:</ins>**
 
+Для решения этой задачи создаётся класс `ConsonantsInOneWord`. В нём содержится несколько методов, коорые потребуются для решения этой задачи.
+
+Сначала идёт объявление константы гласных букв с помощью `Set<Character> VOWELS`. Далее метод `getConsonantsFromWord(String word)`: удаляет небуквенные символы, после чего извлекает согласные буквы и выводит результат. Метод `processFile(String fileName)`: читает файл, выводит строки на экран, разбивает строки на слова, обрабатывает каждое слово и заполняет карты. В конце метод `findUniqueConsonants(Map<Character, Set<String>> consonantToWords)` перебирает все согласные и уникальные добавляет в результат, который в конце выводится.
+
+В `Main` происходит открытие файла с текстом и дальнейшая работа с ним.
 
 **<ins>Код реализации:</ins>**
-```
 
+```
+import java.io.*;
+import java.util.*;
+
+public class ConsonantsInOneWord {
+
+    // Множество гласных букв русского языка
+    private static final Set<Character> VOWELS = new HashSet<>(Arrays.asList(
+            'А', 'Е', 'Ё', 'И', 'О', 'У', 'Ы', 'Э', 'Ю', 'Я',
+            'а', 'е', 'ё', 'и', 'о', 'у', 'ы', 'э', 'ю', 'я'
+    ));
+
+    // Метод для извлечения согласных букв из строки
+    public static Set<Character> getConsonantsFromWord(String word) {
+        Set<Character> consonants = new HashSet<>();
+        word = word.replaceAll("[^а-яА-Я]", "");  // Удаляем все символы, не являющиеся буквами
+
+        for (char c : word.toCharArray()) {
+            if (!VOWELS.contains(c)) {
+                consonants.add(c);
+            }
+        }
+        return consonants;
+    }
+
+    // Метод для обработки файла и извлечения всех согласных
+    public static Map<Character, Set<String>> processFile(String fileName) throws IOException {
+        Map<Character, Set<String>> consonantToWords = new HashMap<>();
+
+        try (BufferedReader br = new BufferedReader(new FileReader(fileName))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                // Выводим сам текст на экран
+                System.out.println(line);
+
+                String[] words = line.split("\\s+");  // Разбиваем текст на слова
+                for (String word : words) {
+                    Set<Character> consonants = getConsonantsFromWord(word);
+                    for (Character consonant : consonants) {
+                        consonantToWords.computeIfAbsent(consonant, k -> new HashSet<>()).add(word.toLowerCase());
+                    }
+                }
+            }
+        }
+        return consonantToWords;
+    }
+
+    // Метод для поиска согласных, встречающихся ровно в одном слове
+    public static Set<Character> findUniqueConsonants(Map<Character, Set<String>> consonantToWords) {
+        Set<Character> result = new TreeSet<>();  // Используем TreeSet для сортировки по алфавиту
+
+        for (Map.Entry<Character, Set<String>> entry : consonantToWords.entrySet()) {
+            if (entry.getValue().size() == 1) {  // Если согласная встречается только в одном слове
+                result.add(entry.getKey());
+            }
+        }
+        return result;
+    }
+}
 ```
 
 **<ins>Вывод на экран:</ins>**
 
+Текст в файле:
+
+Мороз и солнце; день чудесный!
+
+Еще ты дремлешь, друг прелестный —
+
+Пора, красавица, проснись:
+
+Открой сомкнуты негой взоры
+
+Навстречу северной Авроры,
+
+Звездою севера явись!
+
+Согласные буквы, встречающиеся ровно в одном слове (в алфавитном порядке):
+
+З М Н П ш щ
 ***
 
 ### Задание 6.4 (Очередь)
@@ -373,13 +621,77 @@ public class Fraction implements FractionInterface {
 
 **<ins>Метод решения:</ins>**
 
-**<ins>Код реализации:</ins>**
-```
+Для решения этой задачи создаётся класс `QueueEquality`. В нём метод `checkEquality(Queue<Integer> queue, int i, int j)` принимает очередь `queue`, а также два индекса 
+`i` и `j`, для которых нужно проверить равенство элементов. Затем проверяем индексы на ошибочные случаи `i >= j || i < 0 || j >= queue.size()`. Используем метод `toArray()` для преобразования очереди в массив. Это облегчает работу с индексами, так как доступ к элементам массива осуществляется по индексам, что делает проверку проще. Проверка равенства: берём первый элемент в интервале — это элемент с индекса `i`, сравниваем каждый элемент от `i+1` до `j` с этим эталонным элементом. Если хотя бы один элемент не равен эталону, возвращаем `false`. Если все элементы равны эталону, возвращаем `true`.
 
+В `Main` реализуем сценарий работы.
+
+**<ins>Код реализации:</ins>**
+
+```
+import java.util.Queue;
+
+public class QueueEquality {
+    // Метод для проверки равенства сегмента очереди с i-го по j-й элемент
+    public static boolean checkEquality(Queue<Integer> queue, int i, int j) {
+        if (i >= j || i < 0 || j >= queue.size()) {
+            throw new IllegalArgumentException("Неверные индексы. Убедитесь, что i < j и индексы в пределах очереди.");
+        }
+
+        // Преобразуем очередь в массив для удобства работы с индексами
+        Integer[] array = queue.toArray(new Integer[0]);
+
+        // Берём элемент с индекса i как эталон
+        int reference = array[i];
+
+        // Сравниваем элементы с i по j
+        for (int k = i + 1; k <= j; k++) {
+            if (!array[k].equals(reference)) {
+                return false;  // Если хотя бы один элемент не равен эталону, возвращаем false
+            }
+        }
+        return true;  // Все элементы равны эталону, возвращаем true
+    }
+}
 ```
 
 **<ins>Вывод на экран:</ins>**
 
+Сколько элементов в очереди?
+
+5
+
+=Введите элемент=
+
+1
+
+=Введите элемент=
+
+2
+
+=Введите элемент=
+
+3
+
+=Введите элемент=
+
+3
+
+=Введите элемент=
+
+3
+
+Изначальная очередь: [1, 2, 3, 3, 3]
+
+Будем проверять равенство участка с i
+
+2
+
+по j
+
+4
+
+Элементы с индексов 2 по 4 равны.
 ***
 
 ### Задание 7.1 (Стрим)
