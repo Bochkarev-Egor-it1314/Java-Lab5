@@ -924,14 +924,158 @@ public class QueueEquality {
 
 **<ins>Метод решения:</ins>**
 
+Сначала для решения этой задачи создаются классы `Point` и `Polyline`.
+
+Класс `Point` имеет поля `x` и `y` для координат, конструктор, геттреры и метод `toString` для возвращения строки. Так же в классе создаются два метода `equals` и `hashCode` - они потребуются в дальнейшем для корректного удалении дубликатов во время работы со `stream()`.
+
+Класс `Polyline` имеет поле `points` - массив, в котором будут содержаться все точки; конструктор и метод `toString()` для возвращения строки.
+
+В `Main` пользователя просят ввести количество создаваемых точек. На основании этих данных массив `points` заполняется точками, которые удовлетворяют поставленным условиям. Далее создаёам объект `polyline`, который принимает массив `points`, а уже с массивом `points` работает `stream()` - начинаем с начального конвеера, продолжаем промежуточным конвеером, заканчиваем конечным конвеером. В конце получивщаяся ломаная линия выводится на экран.
 
 **<ins>Код реализации:</ins>**
+
+```
+import java.util.Objects;
+
+public class Point {
+    private double x;
+    private double y;
+
+    // Конструктор
+    public Point(double x, double y) {
+        this.x = x;
+        this.y = y;
+    }
+
+    // Геттеры
+    public double getX() {
+        return x;
+    }
+
+    public double getY() {
+        return y;
+    }
+
+    // Возвращение строки
+    @Override
+    public String toString() {
+        return "{" + x + ";" + y + "}";
+    }
+
+    // Переопределение equals и hashCode для корректного удаления одинаковых точек по X и Y
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        Point point = (Point) obj;
+        return Double.compare(point.x, x) == 0 && Double.compare(point.y, y) == 0;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(x, y);
+    }
+}
 ```
 
+```
+import java.util.List;
+
+public class Polyline {
+    private List<Point> points;
+
+    // Конструктор
+    public Polyline(List<Point> points) {
+        this.points = points;
+    }
+
+    // Возвращение строки
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder("Линия [");
+        for (int i = 0; i < points.size(); i++) {
+            sb.append(points.get(i).toString());
+            if (i < points.size() - 1) {
+                sb.append(", ");
+            }
+        }
+        sb.append("]");
+        return sb.toString();
+    }
+}
+```
+
+```
+System.out.print("\nСколько точек создать? ");
+int number = check.readInt(scanner);
+scanner.nextLine();
+
+// Список точек
+List<Point> points = new ArrayList<>();
+
+for (int i = 0; i < number; i++) {
+    System.out.println("Введите координаты в формате: X Y");
+    String input = scanner.nextLine().trim();
+
+    // Если строка пустая, выходим из цикла
+    if (input.isEmpty()) {
+        break;
+    }
+
+    // Разделяем строку на части по пробелу
+    String[] parts = input.split("\\s+");
+    if (parts.length == 2) {
+        try {
+            double x = Double.parseDouble(parts[0]);
+        double y = Double.parseDouble(parts[1]);
+        points.add(new Point(x, y));
+
+        } catch (NumberFormatException e) {
+            System.out.println("Неверный формат. Введите числа для X и Y");
+        }
+    } else {
+        System.out.println("Ошибка ввода. Введите координаты в формате: X Y");
+    }
+}
+
+// Стрим: фильтруем уникальные точки, сортируем по X, изменяем Y на положительный, собираем в Polyline
+Polyline polyline = new Polyline(
+        points.stream()
+                .distinct() // Убираем дубликаты
+                .sorted(Comparator.comparing(Point::getX)) // Сортируем по X
+                .map(p -> new Point(p.getX(), Math.abs(p.getY()))) // Меняем Y на положительный
+                .collect(Collectors.toList()) // Собираем в список
+);
+
+// Выводим ломаную линию
+System.out.println(polyline);
 ```
 
 **<ins>Вывод на экран:</ins>**
 
+Сколько точек создать? 5
+
+Введите координаты в формате: X Y
+
+1 2
+
+Введите координаты в формате: X Y
+
+-3 -5
+
+Введите координаты в формате: X Y
+
+10 -6
+
+Введите координаты в формате: X Y
+
+13 12
+
+Введите координаты в формате: X Y
+
+2 5
+
+Линия [{-3.0;5.0}, {1.0;2.0}, {2.0;5.0}, {10.0;6.0}, {13.0;12.0}]
 ***
 
 ### Задание 7.2 (Стрим)
@@ -953,14 +1097,121 @@ public class QueueEquality {
 
 **<ins>Метод решения:</ins>**
 
+Для решения этой задачи создадим класс `Person`. Он имеет поля `name` и `number`, конструктор, геттеры, метод `toString` для возвращения строки и метод `fromString` для преобразования строки. Метод `fromString`: статический метод, который принимает строку вида "Имя:Номер", разделяет её на части (имя и номер) и создает объект Person. Важно, что если номер отсутствует или его невозможно преобразовать в целое число, мы ставим null для поля number.
+
+Затем создаём вспомогательный класс `Capitalize` с методом `capitalize()`. Этот метод принимает строку и преобразует её так, чтобы первая буква была заглавной, а все остальные - строчными.
+
+В `Main` сначала считывается заданный файл, а его содержимое печатается на экран. Далее файл снова считывается, но на этот раз добавляются дополнительные шаги обработки: каждая строка файла преобразуется в объект Person с помощью метода fromString(); затем мы фильтруем людей, у которых нет номера; после фильтрации мы собираем результат в список. Далее группируем людей: распределяем их по номеру, извлекая номер из каждого объекта; используем `TreeMap`, чтобы результат был отсортирован по номерам; для каждого объекта `Person` извлекаем имя, приводим его к нижнему регистру с первой заглавной буквой, используя метод `capitalize()`, и собираем эти имена в список - для этого используется метод `Collectors.mapping()`, который позволяет применить дополнительную трансформацию перед сбором в коллекцию. В конце выводим итоговый отсортированный список на экран.
 
 **<ins>Код реализации:</ins>**
+
+```
+public class Person {
+    private String name;
+    private Integer number;
+
+    // Конструктор
+    public Person(String name, Integer number) {
+        this.name = name;
+        this.number = number;
+    }
+
+    // Геттеры
+    public String getName() {
+        return name;
+    }
+
+    public Integer getNumber() {
+        return number;
+    }
+
+    // Возвращение строки
+    @Override
+    public String toString() {
+        return name;
+    }
+
+    // Преобразование строки
+    public static Person fromString(String str) {
+        String[] parts = str.split(":");
+        String name = parts[0].trim();
+        Integer number = null;
+        if (parts.length > 1 && !parts[1].trim().isEmpty()) {
+            try {
+                number = Integer.parseInt(parts[1].trim());
+            } catch (NumberFormatException e) {
+                System.out.println("Ошибка формата строки: " + str);
+            }
+        }
+        return new Person(name, number);
+    }
+}
 ```
 
+```
+public class Capitalize {
+    // Метод для преобразования первого символа в верхний регистр
+    public String capitalize(String name) {
+        if (name == null || name.isEmpty()) {
+            return name;
+        }
+        return name.substring(0, 1).toUpperCase() + name.substring(1);
+    }
+}
+```
+
+```
+Capitalize c = new Capitalize();
+String filename = "C:\\Users\\egorb\\IdeaProjects\\Lab5\\src\\ru\\Bochkarev\\Task7\\text.txt";
+
+try {
+    // Чтение и вывод содержимого файла на экран
+    System.out.println("\nСодержимое файла:");
+    Files.lines(Paths.get(filename)).forEach(System.out::println);
+
+    // Чтение из файла
+    List<Person> people = Files.lines(Paths.get(filename))
+            .map(Person::fromString)
+            .filter(person -> person.getNumber() != null) // фильтруем людей без номера
+            .collect(Collectors.toList());
+
+    // Группировка людей по номеру и форматирование имени
+    Map<Integer, List<String>> groupedByNumber = people.stream().collect(Collectors.groupingBy(
+            Person::getNumber, // группируем по номеру
+            TreeMap::new, // используем TreeMap для сортировки по номеру
+            Collectors.mapping(
+                    person -> c.capitalize(person.getName().toLowerCase()), // приводим имя к нужному виду
+                    Collectors.toList()
+            )
+    ));
+
+// Выводим результат
+System.out.println("\nОтсортированный список: " + groupedByNumber);
+
+} catch (IOException e) {
+    e.printStackTrace();
+}
 ```
 
 **<ins>Вывод на экран:</ins>**
 
+Содержимое файла:
+
+Егор:1
+
+Иван:3
+
+Фёдор:4
+
+Андрей:9
+
+Алексей:3
+
+Тимофей:3
+
+Фидан:4
+
+Отсортированный список: {1=[Егор], 3=[Иван, Алексей, Тимофей], 4=[Фёдор, Фидан], 9=[Андрей]}
 ***
 
 ## Вспомогательные методы
