@@ -241,6 +241,11 @@ public class Fraction implements FractionInterface {
         return numerator * other.denominator == denominator * other.numerator;
     }
 }
+
+@Override
+public int hashCode() {
+    return 31 * numerator + denominator;
+}
 ```
 
 **<ins>Вывод на экран:</ins>**
